@@ -11,3 +11,8 @@
     GrimoirePlot is a live dashboard of plotly-compatible plots of remote data
   </em>
 </p>
+
+
+# Acknowledgments
+
+GrimoirePlot is inspired by [visdom](https://github.com/fossasia/visdom)
