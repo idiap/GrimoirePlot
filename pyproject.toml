@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grimoireplot"
+version = "0.0.1"
+description = "rimoirePlot is a live dashboard of plotly-compatible plots of remote data"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "William Droz", email = "william.droz@idiap.ch" },
+]
+
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["grimoireplot", "grimoireplot.*"]
