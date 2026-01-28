@@ -10,10 +10,14 @@ load_dotenv()
 class Plot(SQLModel, table=True):
     name: str = Field(primary_key=True)
     json_data: str
+    chapter_name: str = Field(foreign_key="chapter.name")
+    chapter: "Chapter" = Relationship(back_populates="plots")
 
 
 class Chapter(SQLModel, table=True):
     name: str = Field(primary_key=True)
+
+    plots: list[Plot] = Relationship(back_populates="chapter")
 
     grimoire_name: str = Field(foreign_key="grimoire.name")
     grimoire: "Grimoire" = Relationship(back_populates="chapters")
