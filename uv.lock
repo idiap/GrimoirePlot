@@ -396,12 +396,14 @@ version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "nicegui" },
+    { name = "python-dotenv" },
     { name = "sqlmodel" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "nicegui", specifier = ">=3.5.0,<4" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "sqlmodel", specifier = ">=0.0.31" },
 ]
 provides-extras = ["dev"]
