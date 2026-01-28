@@ -13,7 +13,7 @@ authors = [
 ]
 
 dependencies = [
-    "nicegui>=3.5.0",
+    "nicegui>=3.5.0,<4",
 ]
 
 [project.optional-dependencies]

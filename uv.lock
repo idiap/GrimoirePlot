@@ -352,7 +352,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "nicegui", specifier = ">=3.5.0" }]
+requires-dist = [{ name = "nicegui", specifier = ">=3.5.0,<4" }]
 provides-extras = ["dev"]
 
 [[package]]
