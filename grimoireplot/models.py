@@ -31,10 +31,59 @@ class Grimoire(SQLModel, table=True):
     chapters: list[Chapter] = Relationship(back_populates="grimoire")
 
 
-def create_db_and_tables():
+def get_engine():
     if (grimoire_db := os.getenv("GRIMOIRE_DB")) is None:
         sqlite_file_name = "database.db"
         grimoire_db = f"sqlite:///{sqlite_file_name}"
+    return create_engine(grimoire_db)
 
-    engine = create_engine(grimoire_db)
+
+def create_db_and_tables():
+    engine = get_engine()
     SQLModel.metadata.create_all(engine)
+
+
+def add_plot(
+    grimoire_name: str, chapter_name: str, plot_name: str, json_data: str
+) -> Plot:
+    """Add a plot to a grimoire/chapter, creating them if they don't exist.
+
+    If the grimoire exists, use it, else create it.
+    If the chapter exists, use it, else create it.
+    If the plot exists, replace it, else add it.
+    """
+    from sqlmodel import Session
+
+    engine = get_engine()
+
+    with Session(engine) as session:
+        # Get or create Grimoire
+        grimoire = session.get(Grimoire, grimoire_name)
+        if grimoire is None:
+            grimoire = Grimoire(name=grimoire_name, secret_name=grimoire_name)
+            session.add(grimoire)
+            session.commit()
+            session.refresh(grimoire)
+
+        # Get or create Chapter
+        chapter = session.get(Chapter, chapter_name)
+        if chapter is None:
+            chapter = Chapter(name=chapter_name, grimoire_name=grimoire_name)
+            session.add(chapter)
+            session.commit()
+            session.refresh(chapter)
+
+        # Get or create/replace Plot
+        plot = session.get(Plot, plot_name)
+        if plot is None:
+            plot = Plot(name=plot_name, json_data=json_data, chapter_name=chapter_name)
+            session.add(plot)
+        else:
+            plot.json_data = json_data
+            plot.chapter_name = chapter_name
+            session.add(plot)
+
+        session.commit()
+        session.refresh(plot)
+
+        return plot
