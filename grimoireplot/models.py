@@ -1,10 +1,17 @@
 from __future__ import annotations
 
 import os
-from sqlmodel import Field, Relationship, SQLModel, create_engine
+from sqlmodel import Field, Relationship, SQLModel, create_engine, Session
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+class AddPlotRequest(SQLModel):
+    grimoire_name: str
+    chapter_name: str
+    plot_name: str
+    json_data: str
 
 
 class Plot(SQLModel, table=True):
@@ -52,7 +59,6 @@ def add_plot(
     If the chapter exists, use it, else create it.
     If the plot exists, replace it, else add it.
     """
-    from sqlmodel import Session
 
     engine = get_engine()
 
