@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from sqlmodel import Field, Relationship, SQLModel, create_engine, Session
 from dotenv import load_dotenv
 
@@ -17,6 +18,7 @@ class AddPlotRequest(SQLModel):
 class Plot(SQLModel, table=True):
     name: str = Field(primary_key=True)
     json_data: str
+    created_at: datetime = Field(default_factory=datetime.now)
     chapter_name: str = Field(foreign_key="chapter.name")
     chapter: "Chapter" = Relationship(back_populates="plots")
 
