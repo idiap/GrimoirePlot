@@ -13,6 +13,7 @@ authors = [
 ]
 
 dependencies = [
+    "loguru>=0.7.3",
     "nicegui>=3.5.0,<4",
     "python-dotenv>=1.2.1",
     "sqlmodel>=0.0.31",
