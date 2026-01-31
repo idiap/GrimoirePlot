@@ -60,6 +60,8 @@ def add_plot(
     If the grimoire exists, use it, else create it.
     If the chapter exists, use it, else create it.
     If the plot exists, replace it, else add it.
+
+    TODO: check if json_data is valid plotly, if not raise exception.
     """
 
     engine = get_engine()
