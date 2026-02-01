@@ -5,6 +5,8 @@ from grimoireplot.models import AddPlotRequest, create_db_and_tables, add_plot
 import os
 from loguru import logger
 
+from grimoireplot.ui import DashboardUI
+
 load_dotenv()
 
 if (_GRIMOIRE_SECRET := os.environ.get("GRIMOIRE_SECRET")) is None:
@@ -35,6 +37,6 @@ def my_app():
 
     @ui.page("/")
     def page():
-        pass
+        DashboardUI()
 
     ui.run()
