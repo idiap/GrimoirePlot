@@ -34,8 +34,6 @@ class Chapter(SQLModel, table=True):
 
 class Grimoire(SQLModel, table=True):
     name: str = Field(primary_key=True)
-    secret_name: str
-    age: int | None = None
 
     chapters: list[Chapter] = Relationship(back_populates="grimoire")
 
@@ -70,7 +68,7 @@ def add_plot(
         # Get or create Grimoire
         grimoire = session.get(Grimoire, grimoire_name)
         if grimoire is None:
-            grimoire = Grimoire(name=grimoire_name, secret_name=grimoire_name)
+            grimoire = Grimoire(name=grimoire_name)
             session.add(grimoire)
             session.commit()
             session.refresh(grimoire)
