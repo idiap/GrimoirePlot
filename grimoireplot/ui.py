@@ -1,80 +1,67 @@
 """module for nicegui UI components"""
 
+import json
 from nicegui import ui
+from grimoireplot.models import get_all_grimoires, Grimoire, Chapter, Plot
 
 
-class DashboardUI:
-    """Top level component"""
+@ui.refreshable
+def dashboard_ui():
+    """Top level component that builds the dashboard from database."""
+    grimoires = get_all_grimoires()
 
-    def __init__(self):
-        self.grimoires = []
-        with ui.tabs().classes("w-full") as tabs:
-            tab1 = ui.tab("Grimoire One")
-            tab2 = ui.tab("Grimoire Two")
-        with ui.tab_panels(tabs, value=tab1).classes("w-full"):
-            with ui.tab_panel(tab1):
-                grimoire1 = GrimoireUI("Grimoire One")
-                self.grimoires.append(grimoire1)
-            with ui.tab_panel(tab2):
-                grimoire2 = GrimoireUI("Grimoire Two")
-                self.grimoires.append(grimoire2)
+    if not grimoires:
+        ui.label("No grimoires found. Add some plots to get started!").classes(
+            "text-lg text-gray-500"
+        )
+        return
 
+    # Create tabs for each grimoire
+    with ui.tabs().classes("w-full") as grimoire_tabs:
+        tabs = [ui.tab(grimoire.name) for grimoire in grimoires]
 
-class GrimoireUI:
-    """Grimoire UI component"""
-
-    def __init__(self, name: str):
-        self.name = name
-        self.chapters = []
-        with ui.tabs().classes("w-full") as tabs:
-            tab1 = ui.tab("One")
-            tab2 = ui.tab("Two")
-        with ui.tab_panels(tabs, value=tab1).classes("w-full"):
-            with ui.tab_panel(tab1):
-                ch1 = ChapterUI("One")
-                self.chapters.append(ch1)
-            with ui.tab_panel(tab2):
-                ch2 = ChapterUI("Two")
-                self.chapters.append(ch2)
+    # Create tab panels for each grimoire
+    with ui.tab_panels(grimoire_tabs, value=tabs[0] if tabs else None).classes(
+        "w-full"
+    ):
+        for grimoire, tab in zip(grimoires, tabs):
+            with ui.tab_panel(tab):
+                render_grimoire(grimoire)
 
 
-class ChapterUI:
-    """Chapter UI component"""
+def render_grimoire(grimoire: Grimoire):
+    """Render a grimoire with its chapters."""
+    if not grimoire.chapters:
+        ui.label(f"No chapters in {grimoire.name}").classes("text-gray-500")
+        return
 
-    def __init__(self, name: str):
-        self.name = name
-        self.plots = []
-        with ui.grid(columns=6).classes("w-full gap-2 p-2"):
-            for _ in range(30):
-                current_plot = PlotUI()
-                self.plots.append(current_plot)
+    # Create tabs for each chapter
+    with ui.tabs().classes("w-full") as chapter_tabs:
+        tabs = [ui.tab(chapter.name) for chapter in grimoire.chapters]
+
+    # Create tab panels for each chapter
+    with ui.tab_panels(chapter_tabs, value=tabs[0] if tabs else None).classes("w-full"):
+        for chapter, tab in zip(grimoire.chapters, tabs):
+            with ui.tab_panel(tab):
+                render_chapter(chapter)
 
 
-class PlotUI:
-    """Plot UI component"""
+def render_chapter(chapter: Chapter):
+    """Render a chapter with its plots."""
+    if not chapter.plots:
+        ui.label(f"No plots in {chapter.name}").classes("text-gray-500")
+        return
 
-    def __init__(self):
-        fig = {
-            "data": [
-                {
-                    "type": "scatter",
-                    "name": "Trace 1",
-                    "x": [1, 2, 3, 4],
-                    "y": [1, 2, 3, 2.5],
-                },
-                {
-                    "type": "scatter",
-                    "name": "Trace 2",
-                    "x": [1, 2, 3, 4],
-                    "y": [1.4, 1.8, 3.8, 3.2],
-                    "line": {"dash": "dot", "width": 3},
-                },
-            ],
-            "layout": {
-                "margin": {"l": 15, "r": 0, "t": 0, "b": 15},
-                "plot_bgcolor": "#E5ECF6",
-                "xaxis": {"gridcolor": "white"},
-                "yaxis": {"gridcolor": "white"},
-            },
-        }
-        self.plot = ui.plotly(fig).classes("w-full h-40")
+    # Display plots in a grid
+    with ui.grid(columns=6).classes("w-full gap-2 p-2"):
+        for plot in chapter.plots:
+            render_plot(plot)
+
+
+def render_plot(plot: Plot):
+    """Render a single plot."""
+    try:
+        fig = json.loads(plot.json_data)
+        ui.plotly(fig).classes("w-full h-40")
+    except json.JSONDecodeError:
+        ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")

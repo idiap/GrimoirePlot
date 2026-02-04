@@ -1,17 +1,11 @@
-from dotenv import load_dotenv
 from fastapi import HTTPException, Request
 from nicegui import app, ui
+from grimoireplot.common import get_grimoire_secret
 from grimoireplot.models import AddPlotRequest, create_db_and_tables, add_plot
-import os
-from loguru import logger
 
-from grimoireplot.ui import DashboardUI
+from grimoireplot.ui import dashboard_ui
 
-load_dotenv()
-
-if (_GRIMOIRE_SECRET := os.environ.get("GRIMOIRE_SECRET")) is None:
-    logger.warning("GRIMOIRE_SECRET not set; using default secret")
-    _GRIMOIRE_SECRET = "IDidntSetASecret"
+_GRIMOIRE_SECRET = get_grimoire_secret()
 
 
 def verify_secret(request: Request):
@@ -37,6 +31,6 @@ def my_app():
 
     @ui.page("/")
     def page():
-        DashboardUI()
+        dashboard_ui()
 
     ui.run()
