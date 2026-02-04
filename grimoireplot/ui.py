@@ -62,6 +62,6 @@ def render_plot(plot: Plot):
     """Render a single plot."""
     try:
         fig = json.loads(plot.json_data)
-        ui.plotly(fig).classes("w-full h-40")
+        ui.plotly(fig).classes("w-full")
     except json.JSONDecodeError:
         ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")
