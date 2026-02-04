@@ -1,11 +1,13 @@
 from fastapi import HTTPException, Request
 from nicegui import app, ui
+from grimoireplot.client import get_grimoire_server
 from grimoireplot.common import get_grimoire_secret
 from grimoireplot.models import AddPlotRequest, create_db_and_tables, add_plot
 
 from grimoireplot.ui import dashboard_ui
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
+_GRIMOIRE_SERVER = get_grimoire_server()
 
 
 def verify_secret(request: Request):
@@ -33,4 +35,5 @@ def my_app():
     def page():
         dashboard_ui()
 
-    ui.run()
+    host, port = _GRIMOIRE_SERVER.split("://")[-1].split(":")
+    ui.run(host=host, port=int(port))
