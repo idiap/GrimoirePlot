@@ -29,6 +29,7 @@ def my_app():
             plot_name=add_plot_request.plot_name,
             json_data=add_plot_request.json_data,
         )
+        dashboard_ui.refresh()  # Refresh the dashboard to show the new plot
         return {"status": "success", "plot_name": plot.name}
 
     @ui.page("/")
