@@ -15,7 +15,9 @@ authors = [
 dependencies = [
     "loguru>=0.7.3",
     "nicegui>=3.5.0,<4",
+    "plotly>=6.5.2",
     "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
     "sqlmodel>=0.0.31",
 ]
 
