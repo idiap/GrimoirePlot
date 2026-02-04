@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import os
+from typing import Optional
 from datetime import datetime
 from sqlmodel import Field, Relationship, SQLModel, create_engine, Session
 from dotenv import load_dotenv
@@ -15,27 +14,27 @@ class AddPlotRequest(SQLModel):
     json_data: str
 
 
-class Plot(SQLModel, table=True):
+class Grimoire(SQLModel, table=True):
     name: str = Field(primary_key=True)
-    json_data: str
-    created_at: datetime = Field(default_factory=datetime.now)
-    chapter_name: str = Field(foreign_key="chapter.name")
-    chapter: "Chapter" = Relationship(back_populates="plots")
+
+    chapters: list["Chapter"] = Relationship(back_populates="grimoire")
 
 
 class Chapter(SQLModel, table=True):
     name: str = Field(primary_key=True)
 
-    plots: list[Plot] = Relationship(back_populates="chapter")
-
     grimoire_name: str = Field(foreign_key="grimoire.name")
-    grimoire: "Grimoire" = Relationship(back_populates="chapters")
+    grimoire: Grimoire = Relationship(back_populates="chapters")
+
+    plots: list["Plot"] = Relationship(back_populates="chapter")
 
 
-class Grimoire(SQLModel, table=True):
+class Plot(SQLModel, table=True):
     name: str = Field(primary_key=True)
-
-    chapters: list[Chapter] = Relationship(back_populates="grimoire")
+    json_data: str
+    created_at: datetime = Field(default_factory=datetime.now)
+    chapter_name: str = Field(foreign_key="chapter.name")
+    chapter: Chapter = Relationship(back_populates="plots")
 
 
 def get_engine():
@@ -48,6 +47,39 @@ def get_engine():
 def create_db_and_tables():
     engine = get_engine()
     SQLModel.metadata.create_all(engine)
+
+
+def get_all_grimoires() -> list[Grimoire]:
+    """Get all grimoires with their chapters and plots."""
+    engine = get_engine()
+    with Session(engine) as session:
+        from sqlmodel import select
+
+        statement = select(Grimoire)
+        grimoires = session.exec(statement).all()
+        # Ensure relationships are loaded
+        result = []
+        for grimoire in grimoires:
+            # Access chapters to load them
+            _ = grimoire.chapters
+            for chapter in grimoire.chapters:
+                # Access plots to load them
+                _ = chapter.plots
+            result.append(grimoire)
+        return result
+
+
+def get_grimoire_with_data(grimoire_name: str) -> Optional[Grimoire]:
+    """Get a specific grimoire with all its chapters and plots."""
+    engine = get_engine()
+    with Session(engine) as session:
+        grimoire = session.get(Grimoire, grimoire_name)
+        if grimoire:
+            # Load relationships
+            _ = grimoire.chapters
+            for chapter in grimoire.chapters:
+                _ = chapter.plots
+        return grimoire
 
 
 def add_plot(
