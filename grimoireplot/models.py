@@ -17,7 +17,9 @@ class AddPlotRequest(SQLModel):
 class Grimoire(SQLModel, table=True):
     name: str = Field(primary_key=True)
 
-    chapters: list["Chapter"] = Relationship(back_populates="grimoire")
+    chapters: list["Chapter"] = Relationship(
+        back_populates="grimoire", cascade_delete=True
+    )
 
 
 class Chapter(SQLModel, table=True):
@@ -26,7 +28,7 @@ class Chapter(SQLModel, table=True):
     grimoire_name: str = Field(foreign_key="grimoire.name")
     grimoire: Grimoire = Relationship(back_populates="chapters")
 
-    plots: list["Plot"] = Relationship(back_populates="chapter")
+    plots: list["Plot"] = Relationship(back_populates="chapter", cascade_delete=True)
 
 
 class Plot(SQLModel, table=True):
@@ -127,3 +129,45 @@ def add_plot(
         session.refresh(plot)
 
         return plot
+
+
+def delete_plot(plot_name: str) -> bool:
+    """Delete a plot by name. Returns True if deleted, False if not found."""
+    engine = get_engine()
+    with Session(engine) as session:
+        plot = session.get(Plot, plot_name)
+        if plot is None:
+            return False
+        session.delete(plot)
+        session.commit()
+        return True
+
+
+def delete_chapter(chapter_name: str) -> bool:
+    """Delete a chapter and all its plots. Returns True if deleted, False if not found."""
+    engine = get_engine()
+    with Session(engine) as session:
+        chapter = session.get(Chapter, chapter_name)
+        if chapter is None:
+            return False
+        for plot in chapter.plots:
+            session.delete(plot)
+        session.delete(chapter)
+        session.commit()
+        return True
+
+
+def delete_grimoire(grimoire_name: str) -> bool:
+    """Delete a grimoire and all its chapters and plots. Returns True if deleted, False if not found."""
+    engine = get_engine()
+    with Session(engine) as session:
+        grimoire = session.get(Grimoire, grimoire_name)
+        if grimoire is None:
+            return False
+        for chapter in grimoire.chapters:
+            for plot in chapter.plots:
+                session.delete(plot)
+            session.delete(chapter)
+        session.delete(grimoire)
+        session.commit()
+        return True

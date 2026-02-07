@@ -2,7 +2,32 @@
 
 import json
 from nicegui import ui
-from grimoireplot.models import get_all_grimoires, Grimoire, Chapter, Plot
+from grimoireplot.models import (
+    get_all_grimoires,
+    delete_grimoire,
+    delete_chapter,
+    delete_plot,
+    Grimoire,
+    Chapter,
+    Plot,
+)
+
+
+def _confirm_delete(name: str, delete_fn, refresh: bool = True):
+    """Show a confirmation dialog before deleting."""
+
+    def do_delete():
+        delete_fn(name)
+        dialog.close()
+        if refresh:
+            dashboard_ui.refresh()
+
+    with ui.dialog() as dialog, ui.card():
+        ui.label(f"Delete '{name}'?").classes("text-lg font-bold")
+        with ui.row():
+            ui.button("Cancel", on_click=dialog.close).props("flat")
+            ui.button("Delete", on_click=do_delete, color="red")
+    dialog.open()
 
 
 @ui.refreshable
@@ -18,14 +43,20 @@ def dashboard_ui():
 
     # Create tabs for each grimoire
     with ui.tabs().classes("w-full") as grimoire_tabs:
-        tabs = [ui.tab(grimoire.name) for grimoire in grimoires]
+        for grimoire in grimoires:
+            with ui.tab(grimoire.name):
+                ui.badge("x").props("floating rounded color=red text-white").on(
+                    "click",
+                    lambda _, g=grimoire: _confirm_delete(g.name, delete_grimoire),
+                )
+        tabs = list(grimoire_tabs)
 
     # Create tab panels for each grimoire
     with ui.tab_panels(grimoire_tabs, value=tabs[0] if tabs else None).classes(
         "w-full"
     ):
-        for grimoire, tab in zip(grimoires, tabs):
-            with ui.tab_panel(tab):
+        for grimoire in grimoires:
+            with ui.tab_panel(grimoire.name):
                 render_grimoire(grimoire)
 
 
@@ -37,12 +68,18 @@ def render_grimoire(grimoire: Grimoire):
 
     # Create tabs for each chapter
     with ui.tabs().classes("w-full") as chapter_tabs:
-        tabs = [ui.tab(chapter.name) for chapter in grimoire.chapters]
+        for chapter in grimoire.chapters:
+            with ui.tab(chapter.name):
+                ui.badge("x").props("floating rounded color=red text-white").on(
+                    "click",
+                    lambda _, c=chapter: _confirm_delete(c.name, delete_chapter),
+                )
+        tabs = list(chapter_tabs)
 
     # Create tab panels for each chapter
     with ui.tab_panels(chapter_tabs, value=tabs[0] if tabs else None).classes("w-full"):
-        for chapter, tab in zip(grimoire.chapters, tabs):
-            with ui.tab_panel(tab):
+        for chapter in grimoire.chapters:
+            with ui.tab_panel(chapter.name):
                 render_chapter(chapter)
 
 
@@ -62,6 +99,11 @@ def render_plot(plot: Plot):
     """Render a single plot."""
     try:
         fig = json.loads(plot.json_data)
-        ui.plotly(fig).classes("w-full")
+        with ui.element("div").classes("w-full relative"):
+            ui.plotly(fig).classes("w-full")
+            ui.badge("x").props("floating rounded color=red text-white").on(
+                "click",
+                lambda _, p=plot: _confirm_delete(p.name, delete_plot),
+            )
     except json.JSONDecodeError:
         ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")
