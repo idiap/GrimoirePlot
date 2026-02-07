@@ -45,12 +45,10 @@ def dashboard_ui():
     with ui.tabs().classes("w-full") as grimoire_tabs:
         for grimoire in grimoires:
             with ui.tab(grimoire.name):
-                ui.button(
-                    icon="close",
-                    on_click=lambda _, g=grimoire: _confirm_delete(
-                        g.name, delete_grimoire
-                    ),
-                ).props("flat dense round size=xs").classes("ml-1")
+                ui.badge("x").props("floating rounded color=red text-white").on(
+                    "click",
+                    lambda _, g=grimoire: _confirm_delete(g.name, delete_grimoire),
+                )
         tabs = list(grimoire_tabs)
 
     # Create tab panels for each grimoire
@@ -72,12 +70,10 @@ def render_grimoire(grimoire: Grimoire):
     with ui.tabs().classes("w-full") as chapter_tabs:
         for chapter in grimoire.chapters:
             with ui.tab(chapter.name):
-                ui.button(
-                    icon="close",
-                    on_click=lambda _, c=chapter: _confirm_delete(
-                        c.name, delete_chapter
-                    ),
-                ).props("flat dense round size=xs").classes("ml-1")
+                ui.badge("x").props("floating rounded color=red text-white").on(
+                    "click",
+                    lambda _, c=chapter: _confirm_delete(c.name, delete_chapter),
+                )
         tabs = list(chapter_tabs)
 
     # Create tab panels for each chapter
@@ -103,12 +99,11 @@ def render_plot(plot: Plot):
     """Render a single plot."""
     try:
         fig = json.loads(plot.json_data)
-        with ui.card().classes("w-full"):
-            with ui.row().classes("w-full justify-end"):
-                ui.button(
-                    icon="close",
-                    on_click=lambda _, p=plot: _confirm_delete(p.name, delete_plot),
-                ).props("flat dense round size=xs color=red")
+        with ui.element("div").classes("w-full relative"):
             ui.plotly(fig).classes("w-full")
+            ui.badge("x").props("floating rounded color=red text-white").on(
+                "click",
+                lambda _, p=plot: _confirm_delete(p.name, delete_plot),
+            )
     except json.JSONDecodeError:
         ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")
