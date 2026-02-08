@@ -163,8 +163,6 @@ def delete_chapter(grimoire_name: str, chapter_name: str) -> bool:
         chapter = session.get(Chapter, (chapter_name, grimoire_name))
         if chapter is None:
             return False
-        for plot in chapter.plots:
-            session.delete(plot)
         session.delete(chapter)
         session.commit()
         return True
@@ -177,10 +175,6 @@ def delete_grimoire(grimoire_name: str) -> bool:
         grimoire = session.get(Grimoire, grimoire_name)
         if grimoire is None:
             return False
-        for chapter in grimoire.chapters:
-            for plot in chapter.plots:
-                session.delete(plot)
-            session.delete(chapter)
         session.delete(grimoire)
         session.commit()
         return True
