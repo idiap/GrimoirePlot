@@ -171,3 +171,24 @@ def delete_grimoire(grimoire_name: str) -> bool:
         session.delete(grimoire)
         session.commit()
         return True
+
+
+def get_chapter_with_plots(chapter_name: str) -> Optional[Chapter]:
+    """Get a specific chapter with all its plots."""
+    engine = get_engine()
+    with Session(engine) as session:
+        chapter = session.get(Chapter, chapter_name)
+        if chapter:
+            # Load relationships
+            _ = chapter.plots
+        return chapter
+
+
+def get_plots_for_chapter(chapter_name: str) -> list[Plot]:
+    """Get all plots for a specific chapter."""
+    engine = get_engine()
+    with Session(engine) as session:
+        from sqlmodel import select
+
+        statement = select(Plot).where(Plot.chapter_name == chapter_name)
+        return list(session.exec(statement).all())
