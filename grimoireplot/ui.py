@@ -12,6 +12,22 @@ from grimoireplot.models import (
     Chapter,
     Plot,
 )
+from grimoireplot.ui_elements import (
+    create_tabs,
+    create_tab_panels,
+    create_tab_panel,
+    create_delete_badge,
+    create_plot_grid,
+    create_plot_container,
+    create_plotly_chart,
+    create_empty_state,
+    create_header,
+    create_page_container,
+    create_glass_card,
+    create_label,
+    create_btn_ghost,
+    create_btn_danger,
+)
 
 # Store refreshable instances for each chapter's plots
 _chapter_plot_refreshables: dict[str, ui.refreshable] = {}
@@ -61,11 +77,13 @@ def _confirm_delete(name: str, delete_fn, on_deleted=None):
         else:
             dashboard_ui.refresh()
 
-    with ui.dialog() as dialog, ui.card():
-        ui.label(f"Delete '{name}'?").classes("text-lg font-bold")
-        with ui.row():
-            ui.button("Cancel", on_click=dialog.close).props("flat")
-            ui.button("Delete", on_click=do_delete, color="red")
+    with ui.dialog() as dialog:
+        with create_glass_card():
+            create_label(f"Delete '{name}'?").classes("text-xl font-bold mb-4")
+            create_label("This action cannot be undone.").classes("text-slate-400 mb-6")
+            with ui.row().classes("justify-end gap-3"):
+                create_btn_ghost("Cancel", on_click=dialog.close)
+                create_btn_danger("Delete", on_click=do_delete, icon="delete")
     dialog.open()
 
 
@@ -75,53 +93,56 @@ def dashboard_ui():
     # Clear stale refreshables since we're rebuilding the entire UI
     clear_all_chapter_refreshables()
 
-    grimoires = get_all_grimoires()
+    with create_page_container():
+        # Header
+        create_header("GrimoirePlot", "Your magical data visualization dashboard")
 
-    if not grimoires:
-        ui.label("No grimoires found. Add some plots to get started!").classes(
-            "text-lg text-gray-500"
-        )
-        return
+        grimoires = get_all_grimoires()
 
-    # Create tabs for each grimoire
-    with ui.tabs().classes("w-full") as grimoire_tabs:
-        for grimoire in grimoires:
-            with ui.tab(grimoire.name):
-                ui.badge("x").props("floating rounded color=red text-white").on(
-                    "click",
-                    lambda _, g=grimoire: _confirm_delete(g.name, delete_grimoire),
-                )
-        tabs = list(grimoire_tabs)
+        if not grimoires:
+            create_empty_state(
+                "No grimoires found. Add some plots to get started!",
+                icon="auto_stories",
+            )
+            return
 
-    # Create tab panels for each grimoire
-    with ui.tab_panels(grimoire_tabs, value=tabs[0] if tabs else None).classes(
-        "w-full"
-    ):
-        for grimoire in grimoires:
-            with ui.tab_panel(grimoire.name):
-                render_grimoire(grimoire)
+        # Create tabs for each grimoire
+        with create_tabs() as grimoire_tabs:
+            for grimoire in grimoires:
+                with ui.tab(grimoire.name).classes("rounded-lg") as tab:
+                    tab.style("color: #94A3B8;")
+                    create_delete_badge(
+                        lambda _, g=grimoire: _confirm_delete(g.name, delete_grimoire)
+                    )
+            tabs = list(grimoire_tabs)
+
+        # Create tab panels for each grimoire
+        with create_tab_panels(grimoire_tabs, value=tabs[0] if tabs else None):
+            for grimoire in grimoires:
+                with create_tab_panel(grimoire.name):
+                    render_grimoire(grimoire)
 
 
 def render_grimoire(grimoire: Grimoire):
     """Render a grimoire with its chapters."""
     if not grimoire.chapters:
-        ui.label(f"No chapters in {grimoire.name}").classes("text-gray-500")
+        create_empty_state(f"No chapters in {grimoire.name}", icon="book")
         return
 
     # Create tabs for each chapter
-    with ui.tabs().classes("w-full") as chapter_tabs:
+    with create_tabs() as chapter_tabs:
         for chapter in grimoire.chapters:
-            with ui.tab(chapter.name):
-                ui.badge("x").props("floating rounded color=red text-white").on(
-                    "click",
-                    lambda _, c=chapter: _confirm_delete(c.name, delete_chapter),
+            with ui.tab(chapter.name).classes("rounded-lg") as tab:
+                tab.style("color: #94A3B8;")
+                create_delete_badge(
+                    lambda _, c=chapter: _confirm_delete(c.name, delete_chapter)
                 )
         tabs = list(chapter_tabs)
 
     # Create tab panels for each chapter
-    with ui.tab_panels(chapter_tabs, value=tabs[0] if tabs else None).classes("w-full"):
+    with create_tab_panels(chapter_tabs, value=tabs[0] if tabs else None):
         for chapter in grimoire.chapters:
-            with ui.tab_panel(chapter.name):
+            with create_tab_panel(chapter.name):
                 render_chapter(chapter)
 
 
@@ -134,11 +155,11 @@ def render_chapter(chapter: Chapter):
         """Refreshable UI for the plots in this chapter."""
         plots = get_plots_for_chapter(chapter_name)
         if not plots:
-            ui.label(f"No plots in {chapter_name}").classes("text-gray-500")
+            create_empty_state(f"No plots in {chapter_name}", icon="insert_chart")
             return
 
-        # Display plots in a grid
-        with ui.grid(columns=6).classes("w-full gap-2 p-2"):
+        # Display plots in a responsive grid
+        with create_plot_grid(columns=3):
             for plot in plots:
                 render_plot(plot, chapter_name)
 
@@ -161,13 +182,13 @@ def render_plot(plot: Plot, chapter_name: str | None = None):
 
     try:
         fig = json.loads(plot.json_data)
-        with ui.element("div").classes("w-full relative"):
-            ui.plotly(fig).classes("w-full")
-            ui.badge("x").props("floating rounded color=red text-white").on(
-                "click",
+        with create_plot_container():
+            create_plotly_chart(fig)
+            create_delete_badge(
                 lambda _, p=plot: _confirm_delete(
                     p.name, delete_plot, on_deleted=on_deleted
-                ),
+                )
             )
     except json.JSONDecodeError:
-        ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")
+        with create_plot_container():
+            create_label(f"Invalid plot data: {plot.name}").classes("text-red-400")

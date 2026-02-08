@@ -12,6 +12,7 @@ from grimoireplot.models import (
 )
 
 from grimoireplot.ui import dashboard_ui, refresh_chapter_plots
+from grimoireplot.ui_elements import setup_theme
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
 _GRIMOIRE_SERVER = get_grimoire_server()
@@ -68,7 +69,14 @@ def my_app():
 
     @ui.page("/")
     def page():
+        setup_theme()
         dashboard_ui()
 
     host, port = _GRIMOIRE_SERVER.split("://")[-1].split(":")
-    ui.run(host=host, port=int(port))
+    ui.run(
+        host=host,
+        port=int(port),
+        dark=True,
+        title="GrimoirePlot - Data Visualization Dashboard",
+        favicon="🔮",
+    )
