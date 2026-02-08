@@ -11,7 +11,7 @@ from grimoireplot.models import (
     delete_grimoire,
 )
 
-from grimoireplot.ui import dashboard_ui
+from grimoireplot.ui import dashboard_ui, refresh_chapter_plots
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
 _GRIMOIRE_SERVER = get_grimoire_server()
@@ -36,7 +36,10 @@ def my_app():
             plot_name=add_plot_request.plot_name,
             json_data=add_plot_request.json_data,
         )
-        dashboard_ui.refresh()  # Refresh the dashboard to show the new plot
+        # Try to refresh only the specific chapter's plots
+        # If the chapter doesn't exist in UI yet (new grimoire/chapter), refresh the whole dashboard
+        if not refresh_chapter_plots(add_plot_request.chapter_name):
+            dashboard_ui.refresh()
         return {"status": "success", "plot_name": plot.name}
 
     @app.delete("/plot/{plot_name}")

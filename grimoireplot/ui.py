@@ -7,19 +7,58 @@ from grimoireplot.models import (
     delete_grimoire,
     delete_chapter,
     delete_plot,
+    get_plots_for_chapter,
     Grimoire,
     Chapter,
     Plot,
 )
 
+# Store refreshable instances for each chapter's plots
+_chapter_plot_refreshables: dict[str, ui.refreshable] = {}
 
-def _confirm_delete(name: str, delete_fn, refresh: bool = True):
-    """Show a confirmation dialog before deleting."""
+
+def refresh_chapter_plots(chapter_name: str) -> bool:
+    """Refresh only the plots for a specific chapter.
+
+    Returns True if the chapter was found and refreshed, False otherwise.
+    """
+    if chapter_name in _chapter_plot_refreshables:
+        _chapter_plot_refreshables[chapter_name].refresh()
+        return True
+    return False
+
+
+def refresh_all_chapter_plots():
+    """Refresh all chapter plot areas."""
+    for refreshable in _chapter_plot_refreshables.values():
+        refreshable.refresh()
+
+
+def clear_chapter_refreshable(chapter_name: str):
+    """Remove a chapter's refreshable from the registry."""
+    _chapter_plot_refreshables.pop(chapter_name, None)
+
+
+def clear_all_chapter_refreshables():
+    """Clear all chapter refreshables (called on full dashboard refresh)."""
+    _chapter_plot_refreshables.clear()
+
+
+def _confirm_delete(name: str, delete_fn, on_deleted=None):
+    """Show a confirmation dialog before deleting.
+
+    Args:
+        name: The name of the item to delete.
+        delete_fn: Function to call to perform the deletion.
+        on_deleted: Optional callback to call after deletion. If None, refreshes the whole dashboard.
+    """
 
     def do_delete():
         delete_fn(name)
         dialog.close()
-        if refresh:
+        if on_deleted:
+            on_deleted()
+        else:
             dashboard_ui.refresh()
 
     with ui.dialog() as dialog, ui.card():
@@ -33,6 +72,9 @@ def _confirm_delete(name: str, delete_fn, refresh: bool = True):
 @ui.refreshable
 def dashboard_ui():
     """Top level component that builds the dashboard from database."""
+    # Clear stale refreshables since we're rebuilding the entire UI
+    clear_all_chapter_refreshables()
+
     grimoires = get_all_grimoires()
 
     if not grimoires:
@@ -84,26 +126,48 @@ def render_grimoire(grimoire: Grimoire):
 
 
 def render_chapter(chapter: Chapter):
-    """Render a chapter with its plots."""
-    if not chapter.plots:
-        ui.label(f"No plots in {chapter.name}").classes("text-gray-500")
-        return
+    """Render a chapter with its plots using a refreshable grid."""
+    chapter_name = chapter.name
 
-    # Display plots in a grid
-    with ui.grid(columns=6).classes("w-full gap-2 p-2"):
-        for plot in chapter.plots:
-            render_plot(plot)
+    @ui.refreshable
+    def chapter_plots_ui():
+        """Refreshable UI for the plots in this chapter."""
+        plots = get_plots_for_chapter(chapter_name)
+        if not plots:
+            ui.label(f"No plots in {chapter_name}").classes("text-gray-500")
+            return
+
+        # Display plots in a grid
+        with ui.grid(columns=6).classes("w-full gap-2 p-2"):
+            for plot in plots:
+                render_plot(plot, chapter_name)
+
+    # Store the refreshable for this chapter
+    _chapter_plot_refreshables[chapter_name] = chapter_plots_ui
+
+    # Render the plots
+    chapter_plots_ui()
 
 
-def render_plot(plot: Plot):
+def render_plot(plot: Plot, chapter_name: str | None = None):
     """Render a single plot."""
+
+    def on_deleted():
+        """Callback after plot is deleted - refresh only this chapter's plots."""
+        if chapter_name:
+            refresh_chapter_plots(chapter_name)
+        else:
+            dashboard_ui.refresh()
+
     try:
         fig = json.loads(plot.json_data)
         with ui.element("div").classes("w-full relative"):
             ui.plotly(fig).classes("w-full")
             ui.badge("x").props("floating rounded color=red text-white").on(
                 "click",
-                lambda _, p=plot: _confirm_delete(p.name, delete_plot),
+                lambda _, p=plot: _confirm_delete(
+                    p.name, delete_plot, on_deleted=on_deleted
+                ),
             )
     except json.JSONDecodeError:
         ui.label(f"Invalid plot data: {plot.name}").classes("text-red-500")
