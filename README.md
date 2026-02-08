@@ -21,7 +21,7 @@ uv pip install grimoireplot  # not yet on pypi
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/grimoireplot.git
+# git clone the repo
 cd grimoireplot
 uv sync --extra dev
 ```
