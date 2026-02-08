@@ -74,6 +74,23 @@ grimoireplot push-samples [--host HOST] [--port PORT] [--secret SECRET] [--grimo
 | `--secret` | `IDidntSetASecret` | Authentication secret |
 | `--grimoire-name` | `test_grimoire` | Name of the grimoire to create |
 
+### `grimoireplot live-test`
+
+Test live plot updates by continuously adding datapoints to a line plot.
+
+```bash
+grimoireplot live-test [--host HOST] [--port PORT] [--secret SECRET] [--grimoire-name NAME] [--interval SECONDS] [--max-points N]
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--host` | `localhost` | Server host |
+| `--port` | `8080` | Server port |
+| `--secret` | `IDidntSetASecret` | Authentication secret |
+| `--grimoire-name` | `live_test` | Name of the grimoire to create |
+| `--interval` | `0.2` | Interval between datapoints in seconds |
+| `--max-points` | `0` | Maximum number of points (0 = unlimited) |
+
 ## Programmatic Usage
 
 ### Sending Plots from Python

@@ -13,6 +13,109 @@ def serve_command(args):
     my_app(host=args.host, port=args.port)
 
 
+def live_test_command(args):
+    """Run a live test that adds one datapoint every 0.2 seconds to two plots."""
+    import time
+    import math
+    import plotly.graph_objects as go
+    from grimoireplot.client import push_plot_sync
+
+    server_url = f"http://{args.host}:{args.port}"
+    grimoire_name = args.grimoire_name
+    chapter_name = "Live Test"
+
+    print(f"Starting live test to {server_url}")
+    print(f"Grimoire: {grimoire_name}")
+    print(f"Adding one datapoint every {args.interval} seconds to 2 plots")
+    print("Press Ctrl+C to stop")
+    print("-" * 40)
+
+    # Data for plot 1 (sine wave)
+    x_data_1 = []
+    y_data_1 = []
+    # Data for plot 2 (cosine wave)
+    x_data_2 = []
+    y_data_2 = []
+    step = 0
+
+    try:
+        while args.max_points == 0 or step < args.max_points:
+            # Generate new datapoints
+            x_data_1.append(step)
+            y_data_1.append(math.sin(step * 0.1) + (step * 0.01))
+            x_data_2.append(step)
+            y_data_2.append(math.cos(step * 0.1) + (step * 0.01))
+
+            # Create figure 1 (sine wave)
+            fig1 = go.Figure()
+            fig1.add_trace(
+                go.Scatter(
+                    x=x_data_1,
+                    y=y_data_1,
+                    mode="lines+markers",
+                    name="Sine Wave",
+                    line=dict(color="blue"),
+                    marker=dict(size=6),
+                )
+            )
+            fig1.update_layout(
+                title=f"Sine Wave (Point {step + 1})",
+                xaxis_title="Step",
+                yaxis_title="Value",
+            )
+
+            # Create figure 2 (cosine wave)
+            fig2 = go.Figure()
+            fig2.add_trace(
+                go.Scatter(
+                    x=x_data_2,
+                    y=y_data_2,
+                    mode="lines+markers",
+                    name="Cosine Wave",
+                    line=dict(color="red"),
+                    marker=dict(size=6),
+                )
+            )
+            fig2.update_layout(
+                title=f"Cosine Wave (Point {step + 1})",
+                xaxis_title="Step",
+                yaxis_title="Value",
+            )
+
+            # Push both plots to server
+            try:
+                push_plot_sync(
+                    grimoire_name=grimoire_name,
+                    chapter_name=chapter_name,
+                    plot_name="Sine Wave",
+                    fig=fig1,
+                    grimoire_secret=args.secret,
+                    grimoire_server=server_url,
+                )
+                push_plot_sync(
+                    grimoire_name=grimoire_name,
+                    chapter_name=chapter_name,
+                    plot_name="Cosine Wave",
+                    fig=fig2,
+                    grimoire_secret=args.secret,
+                    grimoire_server=server_url,
+                )
+                print(
+                    f"  Point {step + 1}: sin={y_data_1[-1]:.4f}, cos={y_data_2[-1]:.4f}"
+                )
+            except Exception as e:
+                print(f"  [ERROR] Failed to push point {step + 1}: {e}")
+
+            step += 1
+            time.sleep(args.interval)
+
+    except KeyboardInterrupt:
+        print("\n" + "-" * 40)
+        print(f"Stopped after {step} points")
+
+    print("Done!")
+
+
 def push_samples_command(args):
     """Push sample plots to test the server."""
     from grimoireplot.client import push_plot_sync
@@ -121,6 +224,48 @@ def main():
         help="Name of the grimoire to create (default: test_grimoire)",
     )
     push_parser.set_defaults(func=push_samples_command)
+
+    # Live test command
+    live_parser = subparsers.add_parser(
+        "live-test", help="Test live plot updates by adding datapoints over time"
+    )
+    live_parser.add_argument(
+        "--host",
+        type=str,
+        default=default_host,
+        help=f"Server host (default: {default_host})",
+    )
+    live_parser.add_argument(
+        "--port",
+        type=int,
+        default=default_port,
+        help=f"Server port (default: {default_port})",
+    )
+    live_parser.add_argument(
+        "--secret",
+        type=str,
+        default=default_secret,
+        help="Grimoire secret for authentication",
+    )
+    live_parser.add_argument(
+        "--grimoire-name",
+        type=str,
+        default="live_test",
+        help="Name of the grimoire to create (default: live_test)",
+    )
+    live_parser.add_argument(
+        "--interval",
+        type=float,
+        default=0.2,
+        help="Interval between datapoints in seconds (default: 0.2)",
+    )
+    live_parser.add_argument(
+        "--max-points",
+        type=int,
+        default=0,
+        help="Maximum number of points to add (0 = unlimited, default: 0)",
+    )
+    live_parser.set_defaults(func=live_test_command)
 
     args = parser.parse_args()
 
