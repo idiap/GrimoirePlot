@@ -39,22 +39,28 @@ def my_app():
         )
         # Try to refresh only the specific chapter's plots
         # If the chapter doesn't exist in UI yet (new grimoire/chapter), refresh the whole dashboard
-        if not refresh_chapter_plots(add_plot_request.chapter_name):
+        if not refresh_chapter_plots(
+            add_plot_request.grimoire_name, add_plot_request.chapter_name
+        ):
             dashboard_ui.refresh()
         return {"status": "success", "plot_name": plot.name}
 
-    @app.delete("/plot/{plot_name}")
-    def delete_plot_endpoint(plot_name: str, request: Request):
+    @app.delete("/grimoire/{grimoire_name}/chapter/{chapter_name}/plot/{plot_name}")
+    def delete_plot_endpoint(
+        grimoire_name: str, chapter_name: str, plot_name: str, request: Request
+    ):
         verify_secret(request)
-        if not delete_plot(plot_name):
+        if not delete_plot(grimoire_name, chapter_name, plot_name):
             raise HTTPException(status_code=404, detail="Plot not found")
         dashboard_ui.refresh()
         return {"status": "success", "deleted": plot_name}
 
-    @app.delete("/chapter/{chapter_name}")
-    def delete_chapter_endpoint(chapter_name: str, request: Request):
+    @app.delete("/grimoire/{grimoire_name}/chapter/{chapter_name}")
+    def delete_chapter_endpoint(
+        grimoire_name: str, chapter_name: str, request: Request
+    ):
         verify_secret(request)
-        if not delete_chapter(chapter_name):
+        if not delete_chapter(grimoire_name, chapter_name):
             raise HTTPException(status_code=404, detail="Chapter not found")
         dashboard_ui.refresh()
         return {"status": "success", "deleted": chapter_name}

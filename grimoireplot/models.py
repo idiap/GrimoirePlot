@@ -2,6 +2,7 @@ import os
 from typing import Optional
 from datetime import datetime
 from sqlmodel import Field, Relationship, SQLModel, create_engine, Session
+from sqlalchemy import ForeignKeyConstraint
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,18 +25,26 @@ class Grimoire(SQLModel, table=True):
 
 class Chapter(SQLModel, table=True):
     name: str = Field(primary_key=True)
+    grimoire_name: str = Field(primary_key=True, foreign_key="grimoire.name")
 
-    grimoire_name: str = Field(foreign_key="grimoire.name")
     grimoire: Grimoire = Relationship(back_populates="chapters")
 
     plots: list["Plot"] = Relationship(back_populates="chapter", cascade_delete=True)
 
 
 class Plot(SQLModel, table=True):
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["chapter_name", "grimoire_name"], ["chapter.name", "chapter.grimoire_name"]
+        ),
+    )
+
     name: str = Field(primary_key=True)
+    chapter_name: str = Field(primary_key=True)
+    grimoire_name: str = Field(primary_key=True)
     json_data: str
     created_at: datetime = Field(default_factory=datetime.now)
-    chapter_name: str = Field(foreign_key="chapter.name")
+
     chapter: Chapter = Relationship(back_populates="plots")
 
 
@@ -108,7 +117,7 @@ def add_plot(
             session.refresh(grimoire)
 
         # Get or create Chapter
-        chapter = session.get(Chapter, chapter_name)
+        chapter = session.get(Chapter, (chapter_name, grimoire_name))
         if chapter is None:
             chapter = Chapter(name=chapter_name, grimoire_name=grimoire_name)
             session.add(chapter)
@@ -116,13 +125,17 @@ def add_plot(
             session.refresh(chapter)
 
         # Get or create/replace Plot
-        plot = session.get(Plot, plot_name)
+        plot = session.get(Plot, (plot_name, chapter_name, grimoire_name))
         if plot is None:
-            plot = Plot(name=plot_name, json_data=json_data, chapter_name=chapter_name)
+            plot = Plot(
+                name=plot_name,
+                chapter_name=chapter_name,
+                grimoire_name=grimoire_name,
+                json_data=json_data,
+            )
             session.add(plot)
         else:
             plot.json_data = json_data
-            plot.chapter_name = chapter_name
             session.add(plot)
 
         session.commit()
@@ -131,11 +144,11 @@ def add_plot(
         return plot
 
 
-def delete_plot(plot_name: str) -> bool:
-    """Delete a plot by name. Returns True if deleted, False if not found."""
+def delete_plot(grimoire_name: str, chapter_name: str, plot_name: str) -> bool:
+    """Delete a plot by composite key. Returns True if deleted, False if not found."""
     engine = get_engine()
     with Session(engine) as session:
-        plot = session.get(Plot, plot_name)
+        plot = session.get(Plot, (plot_name, chapter_name, grimoire_name))
         if plot is None:
             return False
         session.delete(plot)
@@ -143,11 +156,11 @@ def delete_plot(plot_name: str) -> bool:
         return True
 
 
-def delete_chapter(chapter_name: str) -> bool:
+def delete_chapter(grimoire_name: str, chapter_name: str) -> bool:
     """Delete a chapter and all its plots. Returns True if deleted, False if not found."""
     engine = get_engine()
     with Session(engine) as session:
-        chapter = session.get(Chapter, chapter_name)
+        chapter = session.get(Chapter, (chapter_name, grimoire_name))
         if chapter is None:
             return False
         for plot in chapter.plots:
@@ -173,22 +186,24 @@ def delete_grimoire(grimoire_name: str) -> bool:
         return True
 
 
-def get_chapter_with_plots(chapter_name: str) -> Optional[Chapter]:
+def get_chapter_with_plots(grimoire_name: str, chapter_name: str) -> Optional[Chapter]:
     """Get a specific chapter with all its plots."""
     engine = get_engine()
     with Session(engine) as session:
-        chapter = session.get(Chapter, chapter_name)
+        chapter = session.get(Chapter, (chapter_name, grimoire_name))
         if chapter:
             # Load relationships
             _ = chapter.plots
         return chapter
 
 
-def get_plots_for_chapter(chapter_name: str) -> list[Plot]:
+def get_plots_for_chapter(grimoire_name: str, chapter_name: str) -> list[Plot]:
     """Get all plots for a specific chapter."""
     engine = get_engine()
     with Session(engine) as session:
         from sqlmodel import select
 
-        statement = select(Plot).where(Plot.chapter_name == chapter_name)
+        statement = select(Plot).where(
+            Plot.chapter_name == chapter_name, Plot.grimoire_name == grimoire_name
+        )
         return list(session.exec(statement).all())

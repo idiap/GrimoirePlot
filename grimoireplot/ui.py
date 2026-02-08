@@ -30,16 +30,17 @@ from grimoireplot.ui_elements import (
 )
 
 # Store refreshable instances for each chapter's plots
-_chapter_plot_refreshables: dict[str, ui.refreshable] = {}
+_chapter_plot_refreshables: dict[tuple[str, str], ui.refreshable] = {}
 
 
-def refresh_chapter_plots(chapter_name: str) -> bool:
+def refresh_chapter_plots(grimoire_name: str, chapter_name: str) -> bool:
     """Refresh only the plots for a specific chapter.
 
     Returns True if the chapter was found and refreshed, False otherwise.
     """
-    if chapter_name in _chapter_plot_refreshables:
-        _chapter_plot_refreshables[chapter_name].refresh()
+    key = (grimoire_name, chapter_name)
+    if key in _chapter_plot_refreshables:
+        _chapter_plot_refreshables[key].refresh()
         return True
     return False
 
@@ -50,9 +51,9 @@ def refresh_all_chapter_plots():
         refreshable.refresh()
 
 
-def clear_chapter_refreshable(chapter_name: str):
+def clear_chapter_refreshable(grimoire_name: str, chapter_name: str):
     """Remove a chapter's refreshable from the registry."""
-    _chapter_plot_refreshables.pop(chapter_name, None)
+    _chapter_plot_refreshables.pop((grimoire_name, chapter_name), None)
 
 
 def clear_all_chapter_refreshables():
@@ -129,13 +130,17 @@ def render_grimoire(grimoire: Grimoire):
         create_empty_state(f"No chapters in {grimoire.name}", icon="book")
         return
 
+    grimoire_name = grimoire.name
+
     # Create tabs for each chapter
     with create_tabs() as chapter_tabs:
         for chapter in grimoire.chapters:
             with ui.tab(chapter.name).classes("rounded-lg") as tab:
                 tab.style("color: #94A3B8;")
                 create_delete_badge(
-                    lambda _, c=chapter: _confirm_delete(c.name, delete_chapter)
+                    lambda _, g=grimoire_name, c=chapter: _confirm_delete(
+                        c.name, lambda name: delete_chapter(g, name)
+                    )
                 )
         tabs = list(chapter_tabs)
 
@@ -143,17 +148,17 @@ def render_grimoire(grimoire: Grimoire):
     with create_tab_panels(chapter_tabs, value=tabs[0] if tabs else None):
         for chapter in grimoire.chapters:
             with create_tab_panel(chapter.name):
-                render_chapter(chapter)
+                render_chapter(chapter, grimoire_name)
 
 
-def render_chapter(chapter: Chapter):
+def render_chapter(chapter: Chapter, grimoire_name: str):
     """Render a chapter with its plots using a refreshable grid."""
     chapter_name = chapter.name
 
     @ui.refreshable
     def chapter_plots_ui():
         """Refreshable UI for the plots in this chapter."""
-        plots = get_plots_for_chapter(chapter_name)
+        plots = get_plots_for_chapter(grimoire_name, chapter_name)
         if not plots:
             create_empty_state(f"No plots in {chapter_name}", icon="insert_chart")
             return
@@ -161,32 +166,29 @@ def render_chapter(chapter: Chapter):
         # Display plots in a responsive grid
         with create_plot_grid(columns=3):
             for plot in plots:
-                render_plot(plot, chapter_name)
+                render_plot(plot, grimoire_name, chapter_name)
 
     # Store the refreshable for this chapter
-    _chapter_plot_refreshables[chapter_name] = chapter_plots_ui
+    _chapter_plot_refreshables[(grimoire_name, chapter_name)] = chapter_plots_ui
 
     # Render the plots
     chapter_plots_ui()
 
 
-def render_plot(plot: Plot, chapter_name: str | None = None):
+def render_plot(plot: Plot, grimoire_name: str, chapter_name: str):
     """Render a single plot."""
 
     def on_deleted():
         """Callback after plot is deleted - refresh only this chapter's plots."""
-        if chapter_name:
-            refresh_chapter_plots(chapter_name)
-        else:
-            dashboard_ui.refresh()
+        refresh_chapter_plots(grimoire_name, chapter_name)
 
     try:
         fig = json.loads(plot.json_data)
         with create_plot_container():
             create_plotly_chart(fig)
             create_delete_badge(
-                lambda _, p=plot: _confirm_delete(
-                    p.name, delete_plot, on_deleted=on_deleted
+                lambda _, g=grimoire_name, c=chapter_name, p=plot: _confirm_delete(
+                    p.name, lambda name: delete_plot(g, c, name), on_deleted=on_deleted
                 )
             )
     except json.JSONDecodeError:
