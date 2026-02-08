@@ -1,6 +1,5 @@
 from fastapi import HTTPException, Request
 from nicegui import app, ui
-from grimoireplot.client import get_grimoire_server
 from grimoireplot.common import get_grimoire_secret
 from grimoireplot.models import (
     AddPlotRequest,
@@ -15,7 +14,6 @@ from grimoireplot.ui import dashboard_ui, refresh_chapter_plots
 from grimoireplot.ui_elements import setup_theme
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
-_GRIMOIRE_SERVER = get_grimoire_server()
 
 
 def verify_secret(request: Request):
@@ -25,7 +23,7 @@ def verify_secret(request: Request):
         raise HTTPException(status_code=403, detail="invalid grimoire-secret")
 
 
-def my_app():
+def my_app(host: str = "localhost", port: int = 8080):
     create_db_and_tables()
 
     @app.post("/add_plot")
@@ -78,11 +76,11 @@ def my_app():
         setup_theme()
         dashboard_ui()
 
-    host, port = _GRIMOIRE_SERVER.split("://")[-1].split(":")
     ui.run(
         host=host,
-        port=int(port),
+        port=port,
         dark=True,
         title="GrimoirePlot - Data Visualization Dashboard",
         favicon="🔮",
+        reload=False,
     )

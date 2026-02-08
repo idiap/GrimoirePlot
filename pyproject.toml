@@ -26,6 +26,9 @@ dependencies = [
 dev = [
 ]
 
+[project.scripts]
+grimoireplot = "grimoireplot.main:main"
+
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
 
