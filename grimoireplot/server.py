@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright © 2026 Idiap Research Institute <contact@idiap.ch>
+# SPDX-FileContributor: William Droz <william.droz@idiap.ch>
+# SPDX-License-Identifier: MIT
+
 from fastapi import HTTPException, Request
 from nicegui import app, ui
 from grimoireplot.common import get_grimoire_secret
