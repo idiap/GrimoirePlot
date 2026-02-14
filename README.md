@@ -12,6 +12,10 @@
   </em>
 </p>
 
+<p align="center">
+  <video src="media/demo_grimoire_light.mp4" controls width="600"></video>
+</p>
+
 ## Installation
 
 ```bash
