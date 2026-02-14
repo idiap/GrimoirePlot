@@ -49,7 +49,10 @@ class Plot(SQLModel, table=True):
 
 
 def get_engine():
-    if (grimoire_db := os.getenv("GRIMOIRE_DB")) is None:
+    if os.getenv("GRIMOIRE_TEST", "").lower() in ("1", "true", "yes"):
+        sqlite_file_name = "database-deleteme.db"
+        grimoire_db = f"sqlite:///{sqlite_file_name}"
+    elif (grimoire_db := os.getenv("GRIMOIRE_DB")) is None:
         sqlite_file_name = "database.db"
         grimoire_db = f"sqlite:///{sqlite_file_name}"
     return create_engine(grimoire_db)
