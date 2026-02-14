@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "grimoireplot"
 version = "0.0.1"
-description = "rimoirePlot is a live dashboard of plotly-compatible plots of remote data"
+description = "GrimoirePlot is a live dashboard of plotly-compatible plots of remote data"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
