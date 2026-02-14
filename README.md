@@ -15,7 +15,7 @@
 ## Installation
 
 ```bash
-uv pip install grimoireplot  # not yet on pypi
+uv pip install grimoireplot  # not yet on pypi, will setup ci/cd on github later on
 ```
 
 Or install from source:
