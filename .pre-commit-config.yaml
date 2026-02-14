@@ -21,3 +21,7 @@ repos:
       - id: check-case-conflict
       - id: trailing-whitespace
       - id: end-of-file-fixer
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
