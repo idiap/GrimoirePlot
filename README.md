@@ -181,6 +181,13 @@ GrimoirePlot can be configured via environment variables:
 
 You can also use a `.env` file in your project directory.
 
+## Testing
+
+```bash
+# you need to install with --extra dev
+GRIMOIRE_TEST=true uv run pytest
+```
+
 ## Concepts
 
 - **Grimoire**: A collection of related visualizations (e.g., an experiment)
