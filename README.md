@@ -26,6 +26,12 @@ cd grimoireplot
 uv sync --extra dev
 ```
 
+### Installation as a tool
+
+```bash
+uv tool install grimoireplot  # not yet on pypi, will setup ci/cd on github later on
+```
+
 ## Quick Start
 
 ### 1. Start the Server
