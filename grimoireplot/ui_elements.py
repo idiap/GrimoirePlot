@@ -128,17 +128,21 @@ GLOBAL_CSS = """
         border-radius: 12px !important;
         border: 1px solid rgba(139, 92, 246, 0.15) !important;
         overflow: hidden !important;
-        padding: 20px 8px 8px 8px !important;
+        padding: 36px 12px 12px 12px !important;
         position: relative;
-        height: 440px !important;
-        min-height: 440px !important;
-        max-height: 440px !important;
+    }
+
+    .plot-container .js-plotly-plot,
+    .plot-container .plot-container.plotly,
+    .plot-container .svg-container {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .plot-container .q-badge {
         position: absolute !important;
-        top: 4px !important;
-        right: 4px !important;
+        top: 6px !important;
+        right: 6px !important;
         z-index: 10;
     }
 
@@ -575,7 +579,7 @@ def create_tab_panel(name: str) -> ui.tab_panel:
 # ============================================================================
 
 
-def create_plot_grid(columns: int = 3) -> ui.grid:
+def create_plot_grid(columns: int = 2) -> ui.grid:
     """Create a responsive grid for plots.
 
     Args:
@@ -585,7 +589,7 @@ def create_plot_grid(columns: int = 3) -> ui.grid:
         Styled grid component.
     """
     grid = ui.grid(columns=columns)
-    grid.classes("w-full gap-4 p-4")
+    grid.classes("w-full gap-6 p-4")
     return grid
 
 
@@ -664,7 +668,8 @@ def create_plotly_chart(fig_data: dict) -> ui.plotly:
     layout.setdefault("paper_bgcolor", "rgba(0,0,0,0)")
     layout.setdefault("plot_bgcolor", "rgba(26, 26, 46, 0.3)")
     layout.setdefault("font", {"color": "#94A3B8"})
-    layout.setdefault("height", 400)  # Fixed height to prevent resize
+    layout.setdefault("height", 450)
+    layout.setdefault("autosize", True)
 
     # Disable Plotly animations
     layout.setdefault("transition", {"duration": 0})
@@ -687,9 +692,12 @@ def create_plotly_chart(fig_data: dict) -> ui.plotly:
         },
     )
 
-    chart = ui.plotly(fig_data)
-    chart.classes("w-full")
-    chart.style("height: 400px; min-height: 400px; max-height: 400px;")
+    # Enable responsive mode via Plotly config
+    if "config" not in fig_data:
+        fig_data["config"] = {}
+    fig_data["config"].setdefault("responsive", True)
+
+    chart = ui.plotly(fig_data).classes("w-full").style("height: 450px;")
     return chart
 
 
@@ -746,9 +754,7 @@ def create_page_container() -> ui.element:
         Container element (use as context manager).
     """
     container = ui.element("div")
-    container.classes(
-        "container mx-auto px-4 py-6 max-w-7xl min-h-screen flex flex-col"
-    )
+    container.classes("container mx-auto px-4 py-6 min-h-screen flex flex-col")
     return container
 
 

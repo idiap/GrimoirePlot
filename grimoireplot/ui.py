@@ -168,7 +168,7 @@ def render_chapter(chapter: Chapter, grimoire_name: str):
             return
 
         # Display plots in a responsive grid
-        with create_plot_grid(columns=3):
+        with create_plot_grid(columns=2):
             for plot in plots:
                 render_plot(plot, grimoire_name, chapter_name)
 
