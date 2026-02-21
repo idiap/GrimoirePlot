@@ -15,6 +15,7 @@ requires-python = ">=3.11"
 authors = [
     { name = "William Droz", email = "william.droz@idiap.ch" },
 ]
+classifiers = ["License :: OSI Approved :: MIT License"]
 
 dependencies = [
     "aiohttp[speedups]>=3.13.3",
@@ -33,6 +34,9 @@ dev = [
 
 [project.scripts]
 grimoireplot = "grimoireplot.main:main"
+
+[project.urls]
+Home = "https://github.com/idiap/GrimoirePlot"
 
 [tool.uv.build-backend]
 module-name = "grimoireplot"
