@@ -4,10 +4,10 @@
 
 ![demo](media/demo_grimoire.gif)
 
-## Installation
+## Adding to your current project
 
 ```bash
-uv pip install grimoireplot  # not yet on pypi, will setup ci/cd on github later on
+uv add grimoireplot
 ```
 
 Or install from source:
