@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: MIT
 
 [build-system]
-requires = ["setuptools>75.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.9.25"]
+build-backend = "uv_build"
 
 [project]
 name = "grimoireplot"
@@ -34,10 +34,6 @@ dev = [
 [project.scripts]
 grimoireplot = "grimoireplot.main:main"
 
-[tool.setuptools.package-data]
-"*" = ["py.typed"]
-
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["grimoireplot", "grimoireplot.*"]
+[tool.uv.build-backend]
+module-name = "grimoireplot"
+module-root = ""
