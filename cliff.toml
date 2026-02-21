@@ -6,7 +6,7 @@
 # template for the changelog header
 header = """
 # Changelog\n
-All notable changes to Agentic Slurm Status will be documented in this file.\n
+All notable changes to GrimoirePlot will be documented in this file.\n
 """
 # template for the changelog body
 # https://keats.github.io/tera/docs/#introduction
