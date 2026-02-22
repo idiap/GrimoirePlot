@@ -2,6 +2,10 @@
 # SPDX-FileContributor: William Droz <william.droz@idiap.ch>
 # SPDX-License-Identifier: MIT
 
+import time
+import logging
+from functools import wraps
+
 from fastapi import HTTPException, Request
 from nicegui import app, ui
 from grimoireplot.common import get_grimoire_secret
@@ -19,6 +23,44 @@ from grimoireplot.ui_elements import setup_theme
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
 
+logger = logging.getLogger("grimoireplot")
+
+
+def retry_on_db_error(max_retries: int = 5, base_delay: float = 0.1):
+    """Decorator that retries a function on database errors up to max_retries times."""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    if attempt < max_retries:
+                        delay = base_delay * (2 ** (attempt - 1))
+                        logger.warning(
+                            "Database error on attempt %d/%d: %s. Retrying in %.2fs...",
+                            attempt,
+                            max_retries,
+                            str(e),
+                            delay,
+                        )
+                        time.sleep(delay)
+                    else:
+                        logger.error(
+                            "Database error on attempt %d/%d: %s. No more retries.",
+                            attempt,
+                            max_retries,
+                            str(e),
+                        )
+                        raise
+
+        return wrapper
+
+    return decorator
+
 
 def verify_secret(request: Request):
     if (secret := request.headers.get("grimoire-secret")) is None:
@@ -31,6 +73,7 @@ def my_app(host: str = "localhost", port: int = 8080):
     create_db_and_tables()
 
     @app.post("/add_plot")
+    @retry_on_db_error(max_retries=5)
     def add_plot_endpoint(add_plot_request: AddPlotRequest, request: Request):
         verify_secret(request)
         plot = add_plot(

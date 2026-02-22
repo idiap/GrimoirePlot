@@ -7,6 +7,7 @@ from typing import Optional
 from datetime import datetime
 from sqlmodel import Field, Relationship, SQLModel, create_engine, Session
 from sqlalchemy import ForeignKeyConstraint
+from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -118,36 +119,56 @@ def add_plot(
         # Get or create Grimoire
         grimoire = session.get(Grimoire, grimoire_name)
         if grimoire is None:
-            grimoire = Grimoire(name=grimoire_name)
-            session.add(grimoire)
-            session.commit()
-            session.refresh(grimoire)
+            try:
+                grimoire = Grimoire(name=grimoire_name)
+                session.add(grimoire)
+                session.commit()
+                session.refresh(grimoire)
+            except IntegrityError:
+                session.rollback()
+                grimoire = session.get(Grimoire, grimoire_name)
 
         # Get or create Chapter
         chapter = session.get(Chapter, (chapter_name, grimoire_name))
         if chapter is None:
-            chapter = Chapter(name=chapter_name, grimoire_name=grimoire_name)
-            session.add(chapter)
-            session.commit()
-            session.refresh(chapter)
+            try:
+                chapter = Chapter(name=chapter_name, grimoire_name=grimoire_name)
+                session.add(chapter)
+                session.commit()
+                session.refresh(chapter)
+            except IntegrityError:
+                session.rollback()
+                chapter = session.get(Chapter, (chapter_name, grimoire_name))
 
         # Get or create/replace Plot
         plot = session.get(Plot, (plot_name, chapter_name, grimoire_name))
         if plot is None:
-            plot = Plot(
-                name=plot_name,
-                chapter_name=chapter_name,
-                grimoire_name=grimoire_name,
-                json_data=json_data,
-            )
-            session.add(plot)
+            try:
+                plot = Plot(
+                    name=plot_name,
+                    chapter_name=chapter_name,
+                    grimoire_name=grimoire_name,
+                    json_data=json_data,
+                )
+                session.add(plot)
+                session.commit()
+                session.refresh(plot)
+            except IntegrityError:
+                session.rollback()
+                plot = session.get(Plot, (plot_name, chapter_name, grimoire_name))
+                if plot is not None:
+                    plot.json_data = json_data
+                    session.add(plot)
+                    session.commit()
+                    session.refresh(plot)
         else:
             plot.json_data = json_data
             session.add(plot)
+            session.commit()
+            session.refresh(plot)
 
-        session.commit()
-        session.refresh(plot)
-
+        if plot is None:
+            raise RuntimeError("Failed to create or retrieve plot")
         return plot
 
 
