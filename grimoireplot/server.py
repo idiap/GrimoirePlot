@@ -2,6 +2,7 @@
 # SPDX-FileContributor: William Droz <william.droz@idiap.ch>
 # SPDX-License-Identifier: MIT
 
+import json
 import time
 import logging
 from functools import wraps
@@ -18,7 +19,7 @@ from grimoireplot.models import (
     delete_grimoire,
 )
 
-from grimoireplot.ui import dashboard_ui, refresh_chapter_plots
+from grimoireplot.ui import dashboard_ui, refresh_chapter_plots, update_plot_chart
 from grimoireplot.ui_elements import setup_theme
 
 _GRIMOIRE_SECRET = get_grimoire_secret()
@@ -82,8 +83,17 @@ def my_app(host: str = "localhost", port: int = 8080):
             plot_name=add_plot_request.plot_name,
             json_data=add_plot_request.json_data,
         )
-        # Try to refresh only the specific chapter's plots
-        # If the chapter doesn't exist in UI yet (new grimoire/chapter), refresh the whole dashboard
+        # Update existing charts in place for live plots; fall back to UI refresh for new plots
+        fig_data = json.loads(add_plot_request.json_data)
+        if update_plot_chart(
+            add_plot_request.grimoire_name,
+            add_plot_request.chapter_name,
+            add_plot_request.plot_name,
+            fig_data,
+        ):
+            return {"status": "success", "plot_name": plot.name}
+
+        # New plot or chapter not yet rendered: refresh chapter or whole dashboard
         if not refresh_chapter_plots(
             add_plot_request.grimoire_name, add_plot_request.chapter_name
         ):

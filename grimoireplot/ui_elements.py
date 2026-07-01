@@ -649,18 +649,8 @@ def create_confirm_dialog(
 # ============================================================================
 
 
-def create_plotly_chart(fig_data: dict) -> ui.plotly:
-    """Create a styled Plotly chart.
-
-    Applies dark theme styling to the chart.
-
-    Args:
-        fig_data: Plotly figure data dict.
-
-    Returns:
-        Styled plotly component.
-    """
-    # Ensure dark theme layout
+def style_plotly_figure(fig_data: dict) -> dict:
+    """Apply GrimoirePlot dark theme styling to a Plotly figure dict."""
     if "layout" not in fig_data:
         fig_data["layout"] = {}
 
@@ -671,10 +661,9 @@ def create_plotly_chart(fig_data: dict) -> ui.plotly:
     layout.setdefault("height", 450)
     layout.setdefault("autosize", True)
 
-    # Disable Plotly animations
+    # Disable Plotly animations for smoother live updates
     layout.setdefault("transition", {"duration": 0})
 
-    # Style axes
     for axis in ["xaxis", "yaxis"]:
         if axis not in layout:
             layout[axis] = {}
@@ -682,7 +671,6 @@ def create_plotly_chart(fig_data: dict) -> ui.plotly:
         layout[axis].setdefault("linecolor", "rgba(139, 92, 246, 0.3)")
         layout[axis].setdefault("tickcolor", "#64748B")
 
-    # Style legend
     layout.setdefault(
         "legend",
         {
@@ -692,12 +680,31 @@ def create_plotly_chart(fig_data: dict) -> ui.plotly:
         },
     )
 
-    # Enable responsive mode via Plotly config
     if "config" not in fig_data:
         fig_data["config"] = {}
     fig_data["config"].setdefault("responsive", True)
 
-    chart = ui.plotly(fig_data).classes("w-full").style("height: 450px;")
+    return fig_data
+
+
+def create_plotly_chart(fig_data: dict) -> ui.plotly:
+    """Create a styled Plotly chart.
+
+    Uses the dict figure interface recommended by NiceGUI for live updates.
+
+    Args:
+        fig_data: Plotly figure data dict.
+
+    Returns:
+        Styled plotly component.
+    """
+    from grimoireplot.plot_live_update import normalize_figure_dict
+
+    chart = (
+        ui.plotly(style_plotly_figure(normalize_figure_dict(fig_data)))
+        .classes("w-full")
+        .style("height: 450px;")
+    )
     return chart
 
 

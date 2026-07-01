@@ -32,9 +32,54 @@ from grimoireplot.ui_elements import (
     create_btn_ghost,
     create_btn_danger,
 )
+from grimoireplot.plot_live_update import plot_uirevision, update_plotly_chart
 
 # Store refreshable instances for each chapter's plots
 _chapter_plot_refreshables: dict[tuple[str, str], ui.refreshable] = {}
+
+# Live plot charts keyed by (grimoire_name, chapter_name, plot_name)
+_plot_charts: dict[tuple[str, str, str], ui.plotly] = {}
+
+
+def _plot_key(
+    grimoire_name: str, chapter_name: str, plot_name: str
+) -> tuple[str, str, str]:
+    return (grimoire_name, chapter_name, plot_name)
+
+
+def clear_plot_charts_for_chapter(grimoire_name: str, chapter_name: str) -> None:
+    """Remove chart references for a chapter before it is re-rendered."""
+    keys_to_remove = [
+        key
+        for key in _plot_charts
+        if key[0] == grimoire_name and key[1] == chapter_name
+    ]
+    for key in keys_to_remove:
+        _plot_charts.pop(key, None)
+
+
+def clear_all_plot_charts() -> None:
+    """Remove all live plot chart references."""
+    _plot_charts.clear()
+
+
+def update_plot_chart(
+    grimoire_name: str, chapter_name: str, plot_name: str, fig_data: dict
+) -> bool:
+    """Update an existing plot chart using NiceGUI's built-in plotly APIs.
+
+    Returns True if the chart was found and updated, False if a full refresh is needed.
+    """
+    chart = _plot_charts.get(_plot_key(grimoire_name, chapter_name, plot_name))
+    if chart is None:
+        return False
+
+    update_plotly_chart(
+        chart,
+        fig_data,
+        plot_uirevision(grimoire_name, chapter_name, plot_name),
+    )
+    return True
 
 
 def refresh_chapter_plots(grimoire_name: str, chapter_name: str) -> bool:
@@ -44,6 +89,7 @@ def refresh_chapter_plots(grimoire_name: str, chapter_name: str) -> bool:
     """
     key = (grimoire_name, chapter_name)
     if key in _chapter_plot_refreshables:
+        clear_plot_charts_for_chapter(grimoire_name, chapter_name)
         _chapter_plot_refreshables[key].refresh()
         return True
     return False
@@ -63,6 +109,7 @@ def clear_chapter_refreshable(grimoire_name: str, chapter_name: str):
 def clear_all_chapter_refreshables():
     """Clear all chapter refreshables (called on full dashboard refresh)."""
     _chapter_plot_refreshables.clear()
+    clear_all_plot_charts()
 
 
 def _confirm_delete(name: str, delete_fn, on_deleted=None):
@@ -188,8 +235,12 @@ def render_plot(plot: Plot, grimoire_name: str, chapter_name: str):
 
     try:
         fig = json.loads(plot.json_data)
+        fig.setdefault("layout", {})["uirevision"] = plot_uirevision(
+            grimoire_name, chapter_name, plot.name
+        )
         with create_plot_container():
-            create_plotly_chart(fig)
+            chart = create_plotly_chart(fig)
+            _plot_charts[_plot_key(grimoire_name, chapter_name, plot.name)] = chart
             create_delete_badge(
                 lambda _, g=grimoire_name, c=chapter_name, p=plot: _confirm_delete(
                     p.name, lambda name: delete_plot(g, c, name), on_deleted=on_deleted
